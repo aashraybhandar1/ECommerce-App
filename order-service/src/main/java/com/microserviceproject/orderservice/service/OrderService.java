@@ -1,5 +1,6 @@
 package com.microserviceproject.orderservice.service;
 
+import com.microserviceproject.orderservice.dto.InventoryResponse;
 import com.microserviceproject.orderservice.dto.OrderLineItemsDto;
 import com.microserviceproject.orderservice.dto.OrderRequest;
 import com.microserviceproject.orderservice.model.Order;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,13 +34,19 @@ public class OrderService {
 
         order.setOrderLineItemsList(orderLineItemsList);
 
-        Boolean result = webClient.get()
-                .uri("http://localhost:8082/api/inventory")
-                .retrieve()
-                .bodyToMono(Boolean.class)
-                .block();
+        List<String> skuCodes =order.getOrderLineItemsList().stream()
+                .map(OrderLineItems::getSkuCode)
+                .toList();
 
-        if(result){
+        InventoryResponse[] inventoryResponseArray = webClient.get()
+                .uri("http://localhost:8082/api/inventory", uriBuilder -> uriBuilder.queryParam("skuCode",skuCodes).build())
+                .retrieve()
+                .bodyToMono(InventoryResponse[].class)
+                .block();
+        boolean allProductsInStock = Arrays.stream(inventoryResponseArray)
+                .allMatch(InventoryResponse::isInStock);
+
+        if(allProductsInStock){
             orderRepository.save(order);
         }
         else{
