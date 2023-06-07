@@ -12,7 +12,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
-@EnableWebSecurity
 public class SecurityConfig  {
     @Bean
     public InMemoryUserDetailsManager userDetailsService() {
@@ -24,13 +23,15 @@ public class SecurityConfig  {
         return new InMemoryUserDetailsManager(user);
     }
 
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
+    public SecurityFilterChain filterChain( HttpSecurity http) throws Exception {
+        http.csrf().disable()
                 .authorizeHttpRequests((authz) -> authz
                         .anyRequest().authenticated()
                 )
                 .httpBasic(withDefaults());
         return http.build();
     }
+
 }
